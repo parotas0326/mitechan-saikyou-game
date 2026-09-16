@@ -4,11 +4,14 @@ Mite.Input = class {
   constructor() {
     this.sources = new Map();
     this.buttons = [...document.querySelectorAll('[data-action]')];
-    this.keyMap = {ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',KeyZ:'punch',KeyX:'jump'};
+    this.keyMap = {
+      ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
+      KeyZ:'punch',KeyX:'jump',KeyC:'kick',KeyV:'special'
+    };
     this.buttons.forEach(button => {
       button.addEventListener('pointerdown', e => {
         e.preventDefault(); if(e.pointerType==='mouse' && e.button!==0)return;
-        button.setPointerCapture(e.pointerId);
+        try{button.setPointerCapture(e.pointerId);}catch(_e){}
         this.sources.set('p'+e.pointerId, button.dataset.action); this.paint();
       });
       for (const event of ['pointerup','pointercancel','lostpointercapture']) button.addEventListener(event,e=>{

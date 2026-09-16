@@ -19,6 +19,7 @@ Mite.SFX=(()=>{
   throw(){tone(520,.05,'square',.018,-180)},charge(){tone(120,.17,'sawtooth',.025,120)},enemyAttack(type){tone(type==='kick'?210:160,.08,'square',.02,type==='kick'?-90:80)},
   ko(){tone(190,.08,'square',.03,-100);setTimeout(()=>tone(95,.11,'square',.025,-40),55)},boss(){tone(105,.18,'sawtooth',.035,-25);setTimeout(()=>tone(85,.22,'sawtooth',.035,-20),150)},
   powerReady(){if(readyPlayed)return;readyPlayed=true;[440,660,880].forEach((f,i)=>setTimeout(()=>tone(f,.09,'square',.025,40),i*70))},resetPowerReady(){readyPlayed=false;},
+  cutin(){noise(.075,.055);tone(170,.11,'sawtooth',.035,520);setTimeout(()=>tone(520,.09,'square',.025,520),70);setTimeout(()=>noise(.055,.035),120)},
   special(){readyPlayed=false;noise(.14,.05);[130,180,260,420].forEach((f,i)=>setTimeout(()=>tone(f,.17,'sawtooth',.035,220),i*60))},
   clear(){[392,523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,.14,'square',.025,20),i*105))},gameover(){[220,165,110].forEach((f,i)=>setTimeout(()=>tone(f,.18,'square',.025,-20),i*150))},
   toggle(){muted=!muted;if(muted)stopBgm();else startBgm();return muted},get muted(){return muted}
