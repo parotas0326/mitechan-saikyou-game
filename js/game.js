@@ -5,28 +5,59 @@
  const load=src=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src;});
  try{
   await Promise.all(names.map(async n=>images[n]=await load('assets/'+n+'.png')));
-  images.stage=await load('assets/stage1_night_street.png');images.title=await load('assets/title_screen.png');images.portrait=await load('assets/mite_portrait_power.png');images.dragon=await load('assets/hyper_ultra_seiryuuha.png');images.cutin=await load('assets/special_cutin.jpg');
+  images.stage=await load('assets/stage1_night_street.png');images.title=await load('assets/title_screen.png');images.portrait=await load('assets/mite_portrait_power.png');images.dragon=await load('assets/hyper_ultra_seiryuuha_forward.png');images.cutin=await load('assets/special_cutin.jpg');images.bossCutin=await load('assets/boss_cutin.png');images.acorn=await load('assets/acorn.png');
   images.yankee=await load('assets/enemies/yankee.png');images.ninja=await load('assets/enemies/ninja.png');images.horseman=await load('assets/enemies/horseman.png');images.horseMount=await load('assets/enemies/horse_mount.png');images.horseRider=await load('assets/enemies/horse_rider.png');images.boss=await load('assets/enemies/boss.png');
+  images.stage2=await load('assets/stage2/background.jpg');images.stage2BossCutin=await load('assets/stage2/boss_cutin.jpg');
+  for(let i=0;i<6;i++){images['s2_mob1_'+i]=await load('assets/stage2/mob1_'+i+'.png');images['s2_mob2_'+i]=await load('assets/stage2/mob2_'+i+'.png');}
+  images.s2_tank=await load('assets/stage2/tank.png');
+  images.s2_boss_idle=await load('assets/stage2/boss_idle.png');images.s2_boss_raise=await load('assets/stage2/boss_raise.png');images.s2_boss_slam=await load('assets/stage2/boss_slam.png');images.s2_boss_impact=await load('assets/stage2/boss_impact.png');images.s2_boss_hurt=await load('assets/stage2/boss_hurt.png');images.s2_boss_down=await load('assets/stage2/boss_down.png');
  }catch(e){document.getElementById('loading').textContent='画像を読み込めません。ZIPをすべて展開して開いてください。';return;}
  document.getElementById('loading').hidden=true;document.getElementById('loading').style.display='none';
  const input=new Mite.Input(),stage=new Mite.Stage(images.stage),player=new Mite.Player(stage);
- const world={enemies:[],projectiles:[],boss:null,sparks:[],mode:'title',score:0,startedLatch:false,shake:0,flash:0,banner:'',bannerT:0,clearT:0,lastGate:null,gameOverSfx:false,clearSfx:false,tapStart:false,bossFreeze:0,hitstop:0,specialLatch:false,enemyHitFx:null,bossIntroT:0,specialCharge:0,specialPending:false,cutinT:0,cutinMax:.78};
+ const world={stageNum:1,enemies:[],projectiles:[],boss:null,sparks:[],mode:'title',score:0,startedLatch:false,shake:0,flash:0,banner:'',bannerT:0,clearT:0,lastGate:null,gameOverSfx:false,clearSfx:false,tapStart:false,bossFreeze:0,hitstop:0,specialLatch:false,enemyHitFx:null,bossIntroT:0,specialCharge:0,specialPending:false,cutinT:0,cutinMax:.78};
  class DragonWave{
   constructor(x,y,dir){this.x=x;this.y=y;this.dir=dir;this.t=3.15;this.remove=false;this.hit=new Set();this.age=0;}
-  get body(){return{x:this.dir>0?this.x:this.x-250,y:this.y-92,width:250,height:92};}
-  update(dt){this.age+=dt;this.t-=dt;this.x+=this.dir*108*dt;for(const e of world.enemies){if(e.dead||this.hit.has(e))continue;if(Mite.rectsOverlap(this.body,e.body)){this.hit.add(e);const dmg=e instanceof Mite.Boss?5:5;const killed=e.damage(dmg,this.dir,true);world.score+=e instanceof Mite.Boss?800:350;addSpark(e.x,e.y-52,true);world.hitstop=Math.max(world.hitstop,killed?.10:.065);world.shake=Math.max(world.shake,.22);world.flash=Math.max(world.flash,.08);}}if(this.t<=0||this.x<-300||this.x>stage.width+300)this.remove=true;}
-  draw(){const sx=this.x-stage.cameraX;if(sx<-320||sx>900)return;ctx.save();ctx.translate(Math.round(sx),Math.round(this.y));ctx.scale(this.dir,1);const pulse=1+Math.sin(this.age*24)*.035;ctx.scale(pulse,pulse);ctx.globalAlpha=Math.min(1,this.t*3);ctx.shadowColor='#23baff';ctx.shadowBlur=12;ctx.drawImage(images.dragon,-15,-118,300,88);ctx.shadowBlur=0;ctx.restore();}
+  get body(){return{x:this.dir>0?this.x:this.x-300,y:this.y-96,width:300,height:96};}
+  update(dt){this.age+=dt;this.t-=dt;this.x+=this.dir*108*dt;for(const e of world.enemies){if(e.dead||this.hit.has(e))continue;if(Mite.rectsOverlap(this.body,e.body)){this.hit.add(e);const dmg=(world.stageNum===2&&e.isBoss)?3:5;const killed=e.damage(dmg,this.dir,true);world.score+=e.isBoss?800:350;addSpark(e.x,e.y-52,true);world.hitstop=Math.max(world.hitstop,killed?.10:.065);world.shake=Math.max(world.shake,.22);world.flash=Math.max(world.flash,.08);}}if(this.t<=0||this.x<-300||this.x>stage.width+300)this.remove=true;}
+  draw(){const sx=this.x-stage.cameraX;if(sx<-340||sx>920)return;ctx.save();ctx.translate(Math.round(sx),Math.round(this.y));ctx.scale(this.dir,1);const pulse=1+Math.sin(this.age*24)*.025;ctx.scale(pulse,pulse);ctx.globalAlpha=Math.min(1,this.t*3);ctx.shadowColor='#23baff';ctx.shadowBlur=16;ctx.drawImage(images.dragon,-8,-120,315,92);ctx.shadowBlur=0;ctx.restore();}
  }
- function reset(){player.x=160;player.y=stage.floor;player.vy=0;player.healFull();Mite.SFX?.resetPowerReady();Mite.SFX?.startBgm();stage.cameraX=0;stage.lockX=null;world.enemies=[];world.projectiles=[];world.sparks=[];world.score=0;world.boss=null;world.shake=0;world.flash=0;world.banner='STAGE 1  夜の商店街';world.bannerT=2.2;world.clearT=0;world.lastGate=null;world.gameOverSfx=false;world.clearSfx=false;world.bossFreeze=0;world.hitstop=0;world.specialLatch=false;world.bossIntroT=0;world.specialCharge=0;world.specialPending=false;world.cutinT=0;spawn();world.mode='play';}
- function spawn(){
+ function reset(){
+  world.stageNum=1;stage.configure(1,images.stage);player.x=160;player.y=stage.floor;player.vy=0;player.healFull();Mite.SFX?.resetPowerReady();Mite.SFX?.startBgm();
+  stage.cameraX=0;stage.lockX=null;world.enemies=[];world.projectiles=[];world.sparks=[];world.score=0;world.boss=null;world.shake=0;world.flash=0;world.banner='STAGE 1  夜の商店街';world.bannerT=2.2;world.clearT=0;world.lastGate=null;world.gameOverSfx=false;world.clearSfx=false;world.bossFreeze=0;world.hitstop=0;world.specialLatch=false;world.bossIntroT=0;world.specialCharge=0;world.specialPending=false;world.cutinT=0;spawnStage1();world.mode='play';
+ }
+ function spawnStage1(){
   world.enemies.push(new Mite.Yankee(720),new Mite.Yankee(1120));
-  // 混成戦：近接2体＋遠距離1体
   world.enemies.push(new Mite.Yankee(1510),new Mite.Ninja(1635),new Mite.Yankee(1735));
   world.enemies.push(new Mite.Ninja(2140),new Mite.HorseMan(2550));
   world.boss=new Mite.Boss(3200);world.boss.hp=world.boss.maxHp=10;world.enemies.push(world.boss);
  }
+ function enterStage2(){
+  world.stageNum=2;stage.configure(2,images.stage2);player.x=150;player.y=stage.floor;player.vy=0;player.healFull();Mite.SFX?.resetPowerReady();
+  world.enemies=[];world.projectiles=[];world.sparks=[];world.boss=null;world.clearT=0;world.lastGate=null;world.bossIntroT=0;world.bossFreeze=.65;world.banner='STAGE 2  戦場';world.bannerT=2.2;world.shake=.08;world.flash=.08;
+  world.enemies.push(new Mite.Stage2Soldier(700),new Mite.Stage2Soldier(1030));
+  world.enemies.push(new Mite.Stage2Assault(1450),new Mite.Stage2Soldier(1585),new Mite.Stage2Assault(1740));
+  world.enemies.push(new Mite.Stage2Tank(2200),new Mite.Stage2Soldier(2360));
+  world.boss=new Mite.Stage2Boss(3200);world.enemies.push(world.boss);
+ }
  function addSpark(x,y,big=false){world.sparks.push({x,y,t:big?.27:.17,big});world.shake=Math.max(world.shake,big?.15:.06);}
- function hitTest(){const hb=player.hitbox;if(!hb)return;for(const e of world.enemies){if(e.dead||!e.hittable||e.lastHit===player.attackId)continue;if(Mite.rectsOverlap(hb,e.body)){e.lastHit=player.attackId;const isKick=player.attackKind==='kick';const strong=player.comboStep===3||isKick;const killed=e.damage(strong?2:1,player.facing,strong);player.addPower(10);world.score+=e instanceof Mite.Boss?(strong?400:250):(strong?180:100);addSpark(e.x,e.y-45,strong||killed);world.hitstop=Math.max(world.hitstop,killed?.09:strong?.06:.032);if(killed)world.flash=Math.max(world.flash,.06);}}}
+ function hitTest(){
+  const hb=player.hitbox;if(!hb)return;
+  for(const e of world.enemies){
+   if(e.dead||!e.hittable||e.lastHit===player.attackId)continue;
+   if(world.stageNum===2&&e instanceof Mite.Stage2Boss){
+    const jumpPunch=player.y<stage.floor-24;
+    if(jumpPunch&&Mite.rectsOverlap(hb,e.weakBody)){
+     e.lastHit=player.attackId;const killed=e.damage(1,player.facing,false);player.addPower(10);world.score+=300;addSpark(e.x,e.weakBody.y+24,true);world.hitstop=Math.max(world.hitstop,killed?.09:.05);world.shake=Math.max(world.shake,.11);
+    }else if(Mite.rectsOverlap(hb,e.body)){
+     e.lastHit=player.attackId;addSpark(player.facing>0?e.x-55:e.x+55,e.y-118,false);world.hitstop=Math.max(world.hitstop,.02);Mite.SFX?.hit(false);
+    }
+    continue;
+   }
+   if(Mite.rectsOverlap(hb,e.body)){
+    e.lastHit=player.attackId;const strong=player.comboStep===3;const killed=e.damage(strong?2:1,player.facing,strong);player.addPower(10);world.score+=e.isBoss?(strong?400:250):(strong?180:100);addSpark(e.x,e.y-45,strong||killed);world.hitstop=Math.max(world.hitstop,killed?.09:strong?.06:.032);if(killed)world.flash=Math.max(world.flash,.06);
+   }
+  }
+ }
  function maybeSpecial(){const pressed=input.down('special');if(!pressed){world.specialLatch=false;return;}if(world.specialLatch)return;world.specialLatch=true;if(player.canSpecial()){player.startSpecial(false);world.cutinT=world.cutinMax;world.specialPending=true;world.specialCharge=-1;world.banner='';world.bannerT=0;world.shake=.08;world.flash=.04;Mite.SFX?.cutin();}}
  function update(dt){
   const startPressed=input.down('punch')||input.down('jump')||world.tapStart;world.tapStart=false;
@@ -41,16 +72,23 @@
   for(const p of world.projectiles)p.update(dt,player,stage,world);
   hitTest();world.enemies=world.enemies.filter(e=>!e.remove);world.projectiles=world.projectiles.filter(p=>!p.remove);for(const s of world.sparks)s.t-=dt;world.sparks=world.sparks.filter(s=>s.t>0);
   const aliveRange=(a,b)=>world.enemies.some(e=>!e.dead&&(e.spawnX??e.x)>=a&&(e.spawnX??e.x)<=b);
-  if(player.x>610&&aliveRange(620,920))stage.lockX=930;
-  else if(player.x>1390&&aliveRange(1400,1810))stage.lockX=1810;
-  else if(player.x>2010&&aliveRange(2020,2260))stage.lockX=2300;
-  else if(player.x>2420&&aliveRange(2420,2740))stage.lockX=2770;
-  else stage.lockX=null;
-  if(world.lastGate!==stage.lockX){if(world.lastGate==null&&stage.lockX!=null){world.banner=stage.lockX===1810?'MIX BATTLE!':'ENEMY!';world.bannerT=.6;}else if(world.lastGate!=null&&stage.lockX==null){world.banner='GO! →';world.bannerT=.72;}world.lastGate=stage.lockX;}
+  if(world.stageNum===1){
+   if(player.x>610&&aliveRange(620,920))stage.lockX=930;
+   else if(player.x>1390&&aliveRange(1400,1810))stage.lockX=1810;
+   else if(player.x>2010&&aliveRange(2020,2260))stage.lockX=2300;
+   else if(player.x>2420&&aliveRange(2420,2740))stage.lockX=2770;
+   else stage.lockX=null;
+  }else{
+   if(player.x>610&&aliveRange(620,1120))stage.lockX=1140;
+   else if(player.x>1360&&aliveRange(1380,1810))stage.lockX=1840;
+   else if(player.x>2070&&aliveRange(2080,2450))stage.lockX=2480;
+   else stage.lockX=null;
+  }
+  if(world.lastGate!==stage.lockX){if(world.lastGate==null&&stage.lockX!=null){world.banner=world.stageNum===2&&stage.lockX===1840?'MIX BATTLE!':'ENEMY!';world.bannerT=.6;}else if(world.lastGate!=null&&stage.lockX==null){world.banner='GO! →';world.bannerT=.72;}world.lastGate=stage.lockX;}
   stage.updateCamera(player);
-  if(player.x>2850&&world.boss&&!world.boss.entered){world.boss.entered=true;world.banner='';world.bannerT=0;world.bossIntroT=1.55;world.bossFreeze=1.05;world.shake=.22;Mite.SFX?.boss();}
+  if(player.x>2850&&world.boss&&!world.boss.entered){world.boss.entered=true;stage.lockX=null;world.banner='';world.bannerT=0;world.bossIntroT=1.35;world.bossFreeze=1.35;world.shake=.22;Mite.SFX?.boss();}
   if(player.dead){world.mode='gameover';world.startedLatch=true;Mite.SFX?.stopBgm();if(!world.gameOverSfx){world.gameOverSfx=true;Mite.SFX?.gameover();}}
-  if(world.boss&&world.boss.dead&&world.boss.remove){world.clearT+=dt;if(world.clearT>.12){world.mode='clear';world.startedLatch=true;Mite.SFX?.stopBgm();if(!world.clearSfx){world.clearSfx=true;Mite.SFX?.clear();}}}
+  if(world.boss&&world.boss.dead&&world.boss.remove){world.clearT+=dt;if(world.clearT>.18){if(world.stageNum===1){enterStage2();}else{world.mode='clear';world.startedLatch=true;Mite.SFX?.stopBgm();if(!world.clearSfx){world.clearSfx=true;Mite.SFX?.clear();}}}}
  }
  function frame(x,y,w,h,accent='#3b7cff'){ctx.fillStyle='#07122b';ctx.fillRect(x,y,w,h);ctx.fillStyle=accent;ctx.fillRect(x,y,w,3);ctx.fillStyle='#f0f6ff';ctx.fillRect(x,y,2,h);ctx.fillRect(x+w-2,y,2,h);ctx.fillRect(x,y+h-2,w,2);}
  function drawHud(){
@@ -66,7 +104,7 @@
  }
  function drawSpark(s){const x=Math.round(s.x-stage.cameraX),y=Math.round(s.y),k=s.big?1.55:1;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.fillStyle='#ff5c34';ctx.fillRect(-14,-2,28,4);ctx.fillRect(-2,-14,4,28);ctx.fillStyle='#ffd84a';ctx.fillRect(-10,-5,20,10);ctx.fillRect(-5,-10,10,20);ctx.fillStyle='#fff';ctx.fillRect(-3,-3,6,6);ctx.restore();}
  function drawPlay(){
-  const mag=world.shake>0?Math.min(7,2+world.shake*22):0,ox=mag?(Math.random()-.5)*mag:0,oy=mag?(Math.random()-.5)*mag:0;ctx.save();ctx.translate(Math.round(ox),Math.round(oy));stage.draw(ctx);for(const p of world.projectiles)p.draw(ctx,stage);for(const e of world.enemies)e.draw(ctx,stage,images);player.draw(ctx,images,stage);for(const s of world.sparks)drawSpark(s);if(world.specialPending){const sx=player.x-stage.cameraX,sy=player.y-58;ctx.save();ctx.globalCompositeOperation='lighter';for(let i=0;i<4;i++){ctx.strokeStyle=i%2?'#53e5ff':'#2b7fff';ctx.lineWidth=3;ctx.globalAlpha=.8-i*.13;ctx.beginPath();ctx.arc(sx,sy,24+i*9+(Math.sin(performance.now()/55+i)*3),0,Math.PI*2);ctx.stroke();}ctx.restore();}ctx.restore();drawHud();
+  const mag=world.shake>0?Math.min(7,2+world.shake*22):0,ox=mag?(Math.random()-.5)*mag:0,oy=mag?(Math.random()-.5)*mag:0;ctx.save();ctx.translate(Math.round(ox),Math.round(oy));stage.draw(ctx);for(const p of world.projectiles)p.draw(ctx,stage,images);for(const e of world.enemies)e.draw(ctx,stage,images);player.draw(ctx,images,stage);for(const s of world.sparks)drawSpark(s);if(world.specialPending){const sx=player.x-stage.cameraX,sy=player.y-58;ctx.save();ctx.globalCompositeOperation='lighter';for(let i=0;i<4;i++){ctx.strokeStyle=i%2?'#53e5ff':'#2b7fff';ctx.lineWidth=3;ctx.globalAlpha=.8-i*.13;ctx.beginPath();ctx.arc(sx,sy,24+i*9+(Math.sin(performance.now()/55+i)*3),0,Math.PI*2);ctx.stroke();}ctx.restore();}ctx.restore();drawHud();
   if(world.flash>0){ctx.fillStyle=`rgba(120,220,255,${Math.min(.35,world.flash*3)})`;ctx.fillRect(0,0,640,360);}
   if(world.bannerT>0){const a=Math.min(1,world.bannerT*2);ctx.globalAlpha=a;ctx.fillStyle='rgba(5,10,20,.84)';ctx.fillRect(132,136,376,48);ctx.strokeStyle=world.banner.includes('青龍波')?'#5fdcff':'#f4c647';ctx.strokeRect(133,137,374,46);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font=world.banner.includes('青龍波')?'bold 17px monospace':'bold 18px monospace';ctx.fillText(world.banner,320,166);ctx.textAlign='left';ctx.globalAlpha=1;}
   drawBossIntro();drawSpecialCutin();
@@ -88,22 +126,22 @@
  }
 
  function drawBossIntro(){
-  if(world.bossIntroT<=0)return;
-  const blink=Math.floor(performance.now()/110)%2;
-  ctx.save();
-  ctx.fillStyle='rgba(5,7,13,.72)';ctx.fillRect(0,0,640,360);
-  ctx.fillStyle=blink?'#ff3b3b':'#b31327';ctx.fillRect(0,78,640,12);ctx.fillRect(0,270,640,12);
-  for(let x=-20;x<660;x+=36){ctx.fillStyle=(Math.floor((x+20)/36)%2)?'#111827':'#ffd43b';ctx.save();ctx.translate(x,66);ctx.rotate(-.55);ctx.fillRect(0,0,20,36);ctx.restore();ctx.save();ctx.translate(x,258);ctx.rotate(-.55);ctx.fillRect(0,0,20,36);ctx.restore();}
-  ctx.textAlign='center';ctx.strokeStyle='#070b14';ctx.lineWidth=7;ctx.fillStyle='#ff4a4a';ctx.font='bold 42px monospace';ctx.strokeText('WARNING!',320,150);ctx.fillText('WARNING!',320,150);
-  ctx.fillStyle='#fff';ctx.font='bold 25px monospace';ctx.strokeText('BOSS 登場',320,202);ctx.fillText('BOSS 登場',320,202);
-  ctx.fillStyle='#ffd84a';ctx.font='bold 16px monospace';ctx.fillText('JL',320,232);ctx.restore();
+  const cut=world.stageNum===2?images.stage2BossCutin:images.bossCutin;if(world.bossIntroT<=0||!cut)return;
+  const total=world.stageNum===2?1.35:1.25,elapsed=total-world.bossIntroT;
+  const enter=Math.min(1,elapsed/.16),exit=Math.min(1,world.bossIntroT/.16);
+  const ease=1-Math.pow(1-enter,3),alpha=Math.min(1,enter*1.7)*exit;
+  ctx.save();ctx.globalAlpha=Math.min(.88,alpha);ctx.fillStyle='#04060a';ctx.fillRect(0,0,640,360);ctx.globalAlpha=alpha;
+  const im=cut,bandY=54,bandH=252,scale=Math.max(640/im.width,bandH/im.height),dw=im.width*scale,dh=im.height*scale;
+  const slide=(1-ease)*90;
+  ctx.beginPath();ctx.rect(0,bandY,640,bandH);ctx.clip();ctx.drawImage(im,(640-dw)/2+slide,bandY+(bandH-dh)/2,dw,dh);
+  ctx.restore();ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#ff2d2d';ctx.fillRect(0,bandY-7,640,4);ctx.fillRect(0,bandY+bandH+3,640,4);if(elapsed<.11){ctx.globalAlpha=(.11-elapsed)/.11*.52;ctx.fillStyle='#fff';ctx.fillRect(0,0,640,360);}ctx.restore();
  }
  function fitTitle(){ctx.fillStyle='#07111f';ctx.fillRect(0,0,640,360);const im=images.title,scale=Math.max(640/im.width,360/im.height),w=im.width*scale,h=im.height*scale;ctx.drawImage(im,(640-w)/2,(360-h)/2,w,h);ctx.fillStyle='rgba(3,8,18,.28)';ctx.fillRect(0,286,640,74);ctx.fillStyle='#07142d';ctx.fillRect(226,304,188,32);ctx.strokeStyle='#77b5ff';ctx.lineWidth=2;ctx.strokeRect(227,305,186,30);ctx.fillStyle='#fff';ctx.font='bold 17px monospace';ctx.textAlign='center';ctx.fillText('GAME START',320,326);ctx.font='9px monospace';ctx.fillText('画面タップ / A / B でスタート',320,349);ctx.textAlign='left';}
  function drawEnd(title,sub,accent){drawPlay();ctx.fillStyle='rgba(4,7,15,.80)';ctx.fillRect(0,0,640,360);ctx.strokeStyle=accent;ctx.lineWidth=3;ctx.strokeRect(160,106,320,146);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 34px monospace';ctx.fillText(title,320,158);ctx.font='13px monospace';ctx.fillText(sub,320,193);ctx.fillText('SCORE  '+String(world.score).padStart(6,'0'),320,218);ctx.font='11px monospace';ctx.fillText('A / B でもう一度',320,240);if(title.includes('CLEAR')){for(let i=0;i<18;i++){const x=(i*73+Math.floor(performance.now()/22))%640,y=(i*47+Math.floor(performance.now()/14))%95+18;ctx.fillStyle=i%3===0?'#ffd84a':i%3===1?'#65b7ff':'#ff5c9b';ctx.fillRect(x,y,4,4);}}ctx.textAlign='left';}
  canvas.addEventListener('pointerdown',e=>{if(world.mode!=='play'){e.preventDefault();world.tapStart=true;Mite.SFX?.unlock();}},{passive:false});
  let previous=0,acc=0;const step=1/120;
- function loop(t){const dt=previous?Math.min((t-previous)/1000,.05):0;previous=t;if(!document.hidden){acc+=dt;while(acc>=step){update(step);acc-=step;}}if(world.mode==='title')fitTitle();else if(world.mode==='play')drawPlay();else if(world.mode==='gameover')drawEnd('GAME OVER','ミテちゃん、まだやれる！','#ff5757');else drawEnd('STAGE CLEAR!','ミテちゃんは最強だぜ！','#f4c647');requestAnimationFrame(loop);}
+ function loop(t){const dt=previous?Math.min((t-previous)/1000,.05):0;previous=t;if(!document.hidden){acc+=dt;while(acc>=step){update(step);acc-=step;}}if(world.mode==='title')fitTitle();else if(world.mode==='play')drawPlay();else if(world.mode==='gameover')drawEnd('GAME OVER','ミテちゃん、まだやれる！','#ff5757');else drawEnd(world.stageNum===2?'STAGE 2 CLEAR!':'STAGE CLEAR!','ミテちゃんは最強だぜ！','#f4c647');requestAnimationFrame(loop);}
  document.addEventListener('visibilitychange',()=>{previous=0;acc=0;});
- window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX});
+ window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.04'});
  requestAnimationFrame(loop);
 })();

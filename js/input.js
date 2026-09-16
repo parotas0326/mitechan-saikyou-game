@@ -6,7 +6,7 @@ Mite.Input = class {
     this.buttons = [...document.querySelectorAll('[data-action]')];
     this.keyMap = {
       ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
-      KeyZ:'punch',KeyX:'jump',KeyC:'kick',KeyV:'special'
+      KeyZ:'punch',KeyX:'jump',KeyV:'special'
     };
     this.buttons.forEach(button => {
       button.addEventListener('pointerdown', e => {
