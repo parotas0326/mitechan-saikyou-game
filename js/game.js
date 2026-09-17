@@ -11,6 +11,7 @@
   for(let i=0;i<6;i++){images['s2_mob1_'+i]=await load('assets/stage2/mob1_'+i+'.png');images['s2_mob2_'+i]=await load('assets/stage2/mob2_'+i+'.png');}
   images.s2_tank=await load('assets/stage2/tank.png');
   images.s2_boss_idle=await load('assets/stage2/boss_idle.png');images.s2_boss_raise=await load('assets/stage2/boss_raise.png');images.s2_boss_slam=await load('assets/stage2/boss_slam.png');images.s2_boss_impact=await load('assets/stage2/boss_impact.png');images.s2_boss_hurt=await load('assets/stage2/boss_hurt.png');images.s2_boss_down=await load('assets/stage2/boss_down.png');
+  for(let i=0;i<8;i++)images['s2_boss_attack_'+i]=await load('assets/stage2/boss_attack_'+i+'.png');
   images.gameClear=await load('assets/game_clear.png');images.gameOver=await load('assets/gameover_mite.png');images.continueButton=await load('assets/continue_button.png');
  }catch(e){document.getElementById('loading').textContent='画像を読み込めません。ZIPをすべて展開して開いてください。';return;}
  document.getElementById('loading').hidden=true;document.getElementById('loading').style.display='none';

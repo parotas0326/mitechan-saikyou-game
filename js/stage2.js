@@ -36,16 +36,40 @@
   draw(ctx,stage){const x=this.x-stage.cameraX;ctx.save();ctx.translate(x,stage.floor);ctx.fillStyle='#ff8a32';ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,-16);ctx.lineTo(-5,-6);ctx.lineTo(8,-24);ctx.lineTo(20,-7);ctx.lineTo(30,0);ctx.fill();ctx.restore();}
  };
  Mite.Stage2Boss=class extends Base{
-  constructor(x){super(x,12);this.entered=false;this.isBoss=true;this.windup=0;this.slam=0;this.recover=0;this.didWave=false;this.specialHitT=0;}
+  constructor(x){super(x,12);this.entered=false;this.isBoss=true;this.windup=0;this.slam=0;this.recover=0;this.didWave=false;this.specialHitT=0;this.facing=-1;this.windupMax=.82;this.slamMax=.46;this.recoverMax=.80;}
   get body(){return{x:this.x-88,y:this.y-286,width:176,height:286};}
-  get weakBody(){const low=this.recover>0||this.slam>0;return{x:this.x-38,y:this.y-(low?214:274),width:76,height:62};}
+  get weakBody(){return this.body;}
   damage(amount,dir,strong=false){const killed=super.damage(amount,dir,strong);if(strong)this.specialHitT=.55;return killed;}
-  update(dt,player,stage,world){this.tick(dt);this.specialHitT=Math.max(0,this.specialHitT-dt);if(this.dead||!this.entered)return;this.active=true;const d=player.x-this.x,ad=Math.abs(d);this.facing=d>=0?1:-1;if(this.hitstun>0)return;
-   if(this.recover>0){this.recover-=dt;this.state='recover';return;}
-   if(this.slam>0){this.slam-=dt;this.state='slam';if(!this.didWave&&this.slam<.20){this.didWave=true;world.projectiles.push(new Mite.GroundWave(this.x+this.facing*35,this.facing));if(Math.abs(player.x-this.x)<118&&player.y>stage.floor-85)player.hurt(18,this.x);world.shake=.30;world.flash=.08;}if(this.slam<=0)this.recover=.85;return;}
-   if(this.windup>0){this.windup-=dt;this.state='raise';this.telegraph=.10;if(this.windup<=0){this.slam=.48;this.didWave=false;Mite.SFX?.enemyAttack('punch');}return;}
-   if(ad>150){this.x+=Math.sign(d)*50*dt;this.state='walk';}else this.state='idle';if(this.cooldown<=0&&ad<260){this.cooldown=1.9+Math.random()*.5;this.windup=.72;}this.x=clamp(this.x,2870,stage.width-110);
+  attackFrame(){
+   if(this.windup>0){const p=1-this.windup/this.windupMax;if(p<.22)return 1;if(p<.78)return 2;return 3;}
+   if(this.slam>0){const p=1-this.slam/this.slamMax;return p<.52?3:4;}
+   if(this.recover>0){const p=1-this.recover/this.recoverMax;if(p<.32)return 5;if(p<.68)return 6;return 7;}
+   return 0;
   }
-  draw(ctx,stage,images){this.shadow(ctx,stage,67);const x=this.x-stage.cameraX,y=stage.floor;let im=images.s2_boss_idle;if(this.windup>0)im=images.s2_boss_raise;else if(this.slam>0)im=images.s2_boss_slam;else if(this.recover>0)im=images.s2_boss_impact;else if(this.hitstun>0||this.specialHitT>0)im=images.s2_boss_hurt;ctx.save();ctx.translate(x,y);ctx.scale(this.facing,1);if(this.dead)ctx.rotate(this.deathRot*this.facing);if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.5) saturate(.2)';const dw=250,dh=290;ctx.drawImage(im,-dw/2,-dh,dw,dh);ctx.filter='none';ctx.restore();if(this.windup>0)this.alert(ctx,stage,'#ff563d','!!');if(this.recover>0){ctx.save();ctx.strokeStyle='#ffd84a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y-195,38,0,Math.PI*2);ctx.stroke();ctx.restore();}}
+  update(dt,player,stage,world){
+   this.tick(dt);this.specialHitT=Math.max(0,this.specialHitT-dt);if(this.dead||!this.entered)return;this.active=true;
+   const d=player.x-this.x,ad=Math.abs(d);this.facing=-1; // approved: Stage 2 boss always faces LEFT
+   if(this.hitstun>0)return;
+   if(this.recover>0){this.recover-=dt;this.state='recover';return;}
+   if(this.slam>0){this.slam-=dt;this.state='slam';
+    if(!this.didWave&&this.slam<this.slamMax*.48){this.didWave=true;world.projectiles.push(new Mite.GroundWave(this.x-35,-1));if(Math.abs(player.x-this.x)<118&&player.y>stage.floor-85)player.hurt(18,this.x);world.shake=.30;world.flash=.08;}
+    if(this.slam<=0)this.recover=this.recoverMax;return;
+   }
+   if(this.windup>0){this.windup-=dt;this.state='raise';this.telegraph=.10;if(this.windup<=0){this.slam=this.slamMax;this.didWave=false;Mite.SFX?.enemyAttack('punch');}return;}
+   if(ad>150){this.x+=Math.sign(d)*50*dt;this.state='walk';}else this.state='idle';
+   if(this.cooldown<=0&&ad<260){this.cooldown=2.05+Math.random()*.45;this.windup=this.windupMax;this.state='raise';}
+   this.x=clamp(this.x,2870,stage.width-110);
+  }
+  draw(ctx,stage,images){
+   this.shadow(ctx,stage,67);const x=this.x-stage.cameraX,y=stage.floor;
+   let im=images['s2_boss_attack_'+this.attackFrame()]||images.s2_boss_idle;
+   if(this.hitstun>0||this.specialHitT>0)im=images.s2_boss_hurt;
+   ctx.save();ctx.translate(x,y); // no horizontal flip: source art is already left-facing and must stay left-facing
+   if(this.dead)ctx.rotate(-this.deathRot);
+   if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.5) saturate(.2)';
+   if((this.hitstun>0||this.specialHitT>0)&&im===images.s2_boss_hurt){ctx.drawImage(im,-110,-250,220,248);}else{ctx.drawImage(im,-132,-330,264,350);}
+   ctx.filter='none';ctx.restore();
+   if(this.windup>0)this.alert(ctx,stage,'#ff563d','!!');
+  }
  };
 })();
