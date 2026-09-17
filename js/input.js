@@ -8,16 +8,23 @@ Mite.Input = class {
       ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
       KeyZ:'punch',KeyX:'jump',KeyV:'special'
     };
+    const releasePointer = e => {
+      this.sources.delete('p'+e.pointerId); this.paint();
+    };
     this.buttons.forEach(button => {
       button.addEventListener('pointerdown', e => {
         e.preventDefault(); if(e.pointerType==='mouse' && e.button!==0)return;
         try{button.setPointerCapture(e.pointerId);}catch(_e){}
         this.sources.set('p'+e.pointerId, button.dataset.action); this.paint();
       });
-      for (const event of ['pointerup','pointercancel','lostpointercapture']) button.addEventListener(event,e=>{
-        this.sources.delete('p'+e.pointerId);this.paint();
-      });
+      for (const event of ['pointerup','pointercancel','lostpointercapture']) button.addEventListener(event,releasePointer);
     });
+    // iOS/Safari can occasionally lose the button-level release event when a finger
+    // leaves the element or the browser chrome interrupts the gesture. Catch releases
+    // globally as a safety net so movement can never remain latched.
+    window.addEventListener('pointerup',releasePointer,{passive:true});
+    window.addEventListener('pointercancel',releasePointer,{passive:true});
+    document.addEventListener('touchcancel',()=>this.clear(),{passive:true});
     window.addEventListener('keydown',e=>{if(this.keyMap[e.code]){e.preventDefault();this.sources.set(e.code,this.keyMap[e.code]);this.paint();}});
     window.addEventListener('keyup',e=>{if(this.keyMap[e.code]){e.preventDefault();this.sources.delete(e.code);this.paint();}});
     window.addEventListener('blur',()=>this.clear());
