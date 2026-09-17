@@ -14,19 +14,27 @@
  Mite.Stage2Assault=class extends SoldierBase{constructor(x){super(x,5,112,'mob2');}};
 
  Mite.TankShot=class{
-  constructor(x,y,dir,type){this.x=x;this.y=y;this.dir=dir;this.type=type;this.remove=false;this.vx=type==='high'?215:195;this.age=0;}
-  get body(){return{x:this.x-18,y:this.y-10,width:36,height:20};}
-  update(dt,player,stage,world){this.age+=dt;this.x+=this.dir*this.vx*dt;if(Mite.rectsOverlap(this.body,player.body)){if(player.hurt(this.type==='high'?14:11,this.x))world.shake=.12;this.remove=true;}if(this.x<-100||this.x>stage.width+100)this.remove=true;}
-  draw(ctx,stage){const x=this.x-stage.cameraX;ctx.save();ctx.translate(x,this.y);ctx.fillStyle=this.type==='high'?'#bf7b38':'#4ac7ff';ctx.strokeStyle='#fff';ctx.lineWidth=2;if(this.type==='high'){ctx.beginPath();ctx.ellipse(0,0,18,9,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ff7929';ctx.fillRect(this.dir>0?-25:15,-4,10,8);}else{ctx.beginPath();ctx.ellipse(0,0,22,8,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.globalAlpha=.5;ctx.fillStyle='#8ce9ff';ctx.fillRect(this.dir>0?-42:20,-5,24,10);}ctx.restore();}
+  constructor(x,y,dir,type,targetY){this.x=x;this.y=y;this.startY=y;this.targetY=targetY;this.dir=dir;this.type=type;this.remove=false;this.vx=type==='high'?215:195;this.age=0;this.pathT=.28;}
+  get body(){return{x:this.x-21,y:this.y-10,width:42,height:20};}
+  update(dt,player,stage,world){
+   this.age+=dt;this.x+=this.dir*this.vx*dt;
+   const p=Math.min(1,this.age/this.pathT),ease=1-Math.pow(1-p,2);this.y=this.startY+(this.targetY-this.startY)*ease;
+   if(Mite.rectsOverlap(this.body,player.body)){if(player.hurt(this.type==='high'?14:11,this.x))world.shake=.12;this.remove=true;}if(this.x<-100||this.x>stage.width+100)this.remove=true;
+  }
+  draw(ctx,stage,images){
+   const x=this.x-stage.cameraX,im=images.s2_shell;ctx.save();ctx.translate(Math.round(x),Math.round(this.y));ctx.scale(this.dir,1);
+   if(im){ctx.drawImage(im,-22,-10,44,21);}else{ctx.fillStyle='#6d7049';ctx.fillRect(-20,-8,40,16);ctx.fillStyle='#d0a43a';ctx.fillRect(12,-5,10,10);}
+   ctx.restore();
+  }
  };
  Mite.Stage2Tank=class extends Base{
   constructor(x){super(x,8);this.attackWind=0;this.attackType='low';this.didFire=false;}
   get body(){return{x:this.x-66,y:this.y-78,width:132,height:78};}
   update(dt,player,stage,world){this.tick(dt);if(this.dead)return;if(!this.active){if(Math.abs(player.x-this.spawnX)>560)return;this.active=true;}const d=player.x-this.x;this.facing=d>=0?1:-1;if(this.hitstun>0)return;
-   if(this.attackWind>0){this.attackWind-=dt;this.state='attack';if(!this.didFire&&this.attackWind<.18){this.didFire=true;const high=this.attackType==='high';world.projectiles.push(new Mite.TankShot(this.x+this.facing*70,stage.floor-(high?140:27),this.facing,this.attackType));world.shake=.16;Mite.SFX?.enemyAttack('punch');}return;}
+   if(this.attackWind>0){this.attackWind-=dt;this.state='attack';if(!this.didFire&&this.attackWind<.18){this.didFire=true;const high=this.attackType==='high';const muzzleX=this.x+this.facing*96,muzzleY=stage.floor-56,targetY=stage.floor-(high?140:27);world.projectiles.push(new Mite.TankShot(muzzleX,muzzleY,this.facing,this.attackType,targetY));world.shake=.16;Mite.SFX?.enemyAttack('punch');}return;}
    if(Math.abs(d)>270){this.x+=Math.sign(d)*42*dt;this.state='walk';}else this.state='idle';if(this.cooldown<=0&&Math.abs(d)<520){this.attackType=Math.random()<.5?'high':'low';this.attackWind=.72;this.cooldown=1.75+Math.random()*.45;this.didFire=false;this.telegraph=.55;}this.x=clamp(this.x,90,stage.width-90);
   }
-  draw(ctx,stage,images){this.shadow(ctx,stage,60);const x=this.x-stage.cameraX,y=stage.floor;ctx.save();ctx.translate(x,y);ctx.scale(this.facing,1);if(this.dead)ctx.rotate(this.deathRot*this.facing);if(this.flash>0)ctx.filter='brightness(2.4) saturate(.2)';ctx.drawImage(images.s2_tank,-78,-94,156,94);ctx.filter='none';if(this.attackWind>0){ctx.strokeStyle=this.attackType==='high'?'#ff6c43':'#55dfff';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(18,-67);ctx.lineTo(72,this.attackType==='high'?-108:-67);ctx.stroke();}ctx.restore();if(this.telegraph>0)this.alert(ctx,stage,this.attackType==='high'?'#ff6c43':'#55dfff',this.attackType==='high'?'▲':'▬');}
+  draw(ctx,stage,images){this.shadow(ctx,stage,60);const x=this.x-stage.cameraX,y=stage.floor;ctx.save();ctx.translate(x,y);ctx.scale(-this.facing,1);if(this.dead)ctx.rotate(-this.deathRot*this.facing);if(this.flash>0)ctx.filter='brightness(2.4) saturate(.2)';ctx.drawImage(images.s2_tank,-78,-94,156,94);ctx.filter='none';if(this.attackWind>0){ctx.strokeStyle=this.attackType==='high'?'#ff6c43':'#ffd84a';ctx.lineWidth=3;ctx.globalAlpha=.78;ctx.beginPath();ctx.moveTo(-70,-56);ctx.lineTo(-102,this.attackType==='high'?-95:-43);ctx.stroke();ctx.globalAlpha=1;}ctx.restore();if(this.telegraph>0)this.alert(ctx,stage,this.attackType==='high'?'#ff6c43':'#ffd84a',this.attackType==='high'?'▲':'▬');}
  };
 
  Mite.GroundWave=class{

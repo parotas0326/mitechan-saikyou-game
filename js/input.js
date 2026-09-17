@@ -32,8 +32,11 @@ Mite.Input = class {
     window.addEventListener('resize',()=>this.clear());
     document.addEventListener('visibilitychange',()=>this.clear());
     document.addEventListener('contextmenu',e=>e.preventDefault());
-    document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
-    document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+    // Keep Safari from interpreting rapid game-button taps as page zoom/gesture commands.
+    for(const event of ['gesturestart','gesturechange','gestureend'])document.addEventListener(event,e=>e.preventDefault(),{passive:false});
+    document.addEventListener('touchmove',e=>{if(e.target.closest?.('.console'))e.preventDefault();},{passive:false});
+    document.addEventListener('touchend',e=>{if(e.target.closest?.('.console'))e.preventDefault();},{passive:false});
+    document.addEventListener('dblclick',e=>{if(e.target.closest?.('.console'))e.preventDefault();},{passive:false});
   }
   down(action){return [...this.sources.values()].includes(action);}
   paint(){this.buttons.forEach(b=>b.classList.toggle('held',this.down(b.dataset.action)));}
