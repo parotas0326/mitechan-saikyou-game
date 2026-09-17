@@ -10,9 +10,13 @@
   images.stage2=await load('assets/stage2/background.jpg');images.stage2BossCutin=await load('assets/stage2/boss_cutin.jpg');
   for(let i=0;i<6;i++){images['s2_mob1_'+i]=await load('assets/stage2/mob1_'+i+'.png');images['s2_mob2_'+i]=await load('assets/stage2/mob2_'+i+'.png');}
   images.s2_tank=await load('assets/stage2/tank.png');
-  images.s2_boss_idle=await load('assets/stage2/boss_idle.png');images.s2_boss_raise=await load('assets/stage2/boss_raise.png');images.s2_boss_slam=await load('assets/stage2/boss_slam.png');images.s2_boss_impact=await load('assets/stage2/boss_impact.png');images.s2_boss_hurt=await load('assets/stage2/boss_hurt.png');images.s2_boss_down=await load('assets/stage2/boss_down.png');
+  images.s2_boss_idle=await load('assets/stage2/boss_idle.png');images.s2_boss_hurt=await load('assets/stage2/boss_hurt.png');
   for(let i=0;i<8;i++)images['s2_boss_attack_'+i]=await load('assets/stage2/boss_attack_'+i+'.png');
   images.gameClear=await load('assets/game_clear.png');images.gameOver=await load('assets/gameover_mite.png');images.continueButton=await load('assets/continue_button.png');
+  images.stage3=await load('assets/stage3/background.png');
+  for(let i=1;i<=8;i++){images['s3_alien_walk_'+i]=await load('assets/stage3/alien/walk_'+String(i).padStart(2,'0')+'.png');images['s3_alien_attack_'+i]=await load('assets/stage3/alien/attack_'+String(i).padStart(2,'0')+'.png');}
+  images.s3_ufo_idle_1=await load('assets/stage3/ufo/idle_01.png');images.s3_ufo_idle_2=await load('assets/stage3/ufo/idle_02.png');images.s3_ufo_hover=await load('assets/stage3/ufo/hover.png');images.s3_ufo_move_1=await load('assets/stage3/ufo/move_01.png');images.s3_ufo_move_2=await load('assets/stage3/ufo/move_02.png');images.s3_ufo_charge_1=await load('assets/stage3/ufo/beam_charge_01.png');images.s3_ufo_charge_2=await load('assets/stage3/ufo/beam_charge_02.png');images.s3_ufo_fire=await load('assets/stage3/ufo/beam_fire.png');images.s3_ufo_damage=await load('assets/stage3/ufo/damage.png');images.s3_ufo_destroy=await load('assets/stage3/ufo/destroy.png');
+  images.s3_badom_idle_1=await load('assets/stage3/badom/idle_01.png');images.s3_badom_idle_2=await load('assets/stage3/badom/idle_02.png');for(const n of ['summon_charge','summon_release','beam_charge','beam_fire','damage','defeat'])images['s3_badom_'+n]=await load('assets/stage3/badom/'+n+'.png');
  }catch(e){document.getElementById('loading').textContent='画像を読み込めません。ZIPをすべて展開して開いてください。';return;}
  document.getElementById('loading').hidden=true;document.getElementById('loading').style.display='none';
  const input=new Mite.Input(),stage=new Mite.Stage(images.stage),player=new Mite.Player(stage);
@@ -24,7 +28,7 @@
   get body(){const base=this.x+this.dir*this.travel,w=this.width;return{x:this.dir>0?base:base-w,y:this.y-112,width:w,height:105};}
   update(dt){
    this.age+=dt;this.t-=dt;if(this.age>.58)this.travel+=150*dt;
-   if(this.reveal>.20){for(const e of world.enemies){if(e.dead||this.hit.has(e))continue;if(Mite.rectsOverlap(this.body,e.body)){this.hit.add(e);const dmg=(world.stageNum===2&&e.isBoss)?3:5;const killed=e.damage(dmg,this.dir,true);world.score+=e.isBoss?800:350;addSpark(e.x,e.y-52,true);world.hitstop=Math.max(world.hitstop,killed?.10:.065);world.shake=Math.max(world.shake,.22);world.flash=Math.max(world.flash,.08);}}}
+   if(this.reveal>.20){for(const e of world.enemies){if(e.dead||this.hit.has(e))continue;if(Mite.rectsOverlap(this.body,e.body)){this.hit.add(e);const dmg=((world.stageNum===2||world.stageNum===3)&&e.isBoss)?3:5;const killed=e.damage(dmg,this.dir,true);world.score+=e.isBoss?800:350;addSpark(e.x,e.y-52,true);world.hitstop=Math.max(world.hitstop,killed?.10:.065);world.shake=Math.max(world.shake,.22);world.flash=Math.max(world.flash,.08);}}}
    const base=this.x+this.dir*this.travel;if(this.t<=0||base<-360||base>stage.width+360)this.remove=true;
   }
   draw(){
@@ -55,12 +59,26 @@
   world.enemies.push(new Mite.Stage2Tank(2200),new Mite.Stage2Soldier(2360));
   world.boss=new Mite.Stage2Boss(3200);world.enemies.push(world.boss);world.mode='play';
  }
- function continueCurrent(){const st=world.stageNum;if(st===2)enterStage2(true);else{const keep=world.score;world.stageNum=1;stage.configure(1,images.stage);resetCommon();world.score=keep;player.x=160;player.y=stage.floor;world.banner='STAGE 1  夜の商店街';world.bannerT=1.6;spawnStage1();world.mode='play';}}
+ function enterStage3(fromContinue=false){
+  world.stageNum=3;stage.configure(3,images.stage3);resetCommon();player.x=150;player.y=stage.floor;world.banner='STAGE 3  宇宙';world.bannerT=2.2;world.shake=.08;world.flash=.08;world.bossFreeze=fromContinue?.30:.55;
+  world.enemies.push(new Mite.Stage3Alien(700),new Mite.Stage3Alien(980));
+  world.enemies.push(new Mite.Stage3Alien(1420),new Mite.Stage3UFO(1620));
+  world.enemies.push(new Mite.Stage3Alien(2080),new Mite.Stage3UFO(2290),new Mite.Stage3Alien(2420));
+  world.boss=new Mite.Stage3Badom(3170);world.enemies.push(world.boss);world.mode='play';
+ }
+ function continueCurrent(){const st=world.stageNum;if(st===3)enterStage3(true);else if(st===2)enterStage2(true);else{const keep=world.score;world.stageNum=1;stage.configure(1,images.stage);resetCommon();world.score=keep;player.x=160;player.y=stage.floor;world.banner='STAGE 1  夜の商店街';world.bannerT=1.6;spawnStage1();world.mode='play';}}
  function addSpark(x,y,big=false){world.sparks.push({x,y,t:big?.27:.17,big});world.shake=Math.max(world.shake,big?.15:.06);}
  function hitTest(){
   const hb=player.hitbox;if(!hb)return;
   for(const e of world.enemies){
    if(e.dead||!e.hittable||e.lastHit===player.attackId)continue;
+   if(world.stageNum===3&&e instanceof Mite.Stage3Badom){
+    if(player.y>=stage.floor-28)continue; // バドムは空中：地上パンチは届かない
+    if(Mite.rectsOverlap(hb,e.body)){
+     e.lastHit=player.attackId;const strong=player.comboStep===3;const killed=e.damage(strong?2:1,player.facing,strong);player.addPower(10);world.score+=strong?450:300;addSpark(e.x,e.y,strong||killed);world.hitstop=Math.max(world.hitstop,killed?.09:strong?.06:.04);world.shake=Math.max(world.shake,.11);if(killed)world.flash=Math.max(world.flash,.06);
+    }
+    continue;
+   }
    if(world.stageNum===2&&e instanceof Mite.Stage2Boss){
     if(Mite.rectsOverlap(hb,e.body)){
      e.lastHit=player.attackId;const killed=e.damage(1,player.facing,false);player.addPower(10);world.score+=300;addSpark(player.facing>0?e.x-58:e.x+58,Math.max(48,e.y-126),true);world.hitstop=Math.max(world.hitstop,killed?.09:.05);world.shake=Math.max(world.shake,.11);if(killed)world.flash=Math.max(world.flash,.06);
@@ -79,7 +97,7 @@
    if(startPressed&&!world.startedLatch){world.startedLatch=true;if(world.mode==='gameover')continueCurrent();else reset();}
    if(!startPressed)world.startedLatch=false;return;
   }
-  if(world.clearOverlayT>0){world.clearOverlayT=Math.max(0,world.clearOverlayT-dt);if(world.clearOverlayT===0&&world.clearPending){world.clearPending=false;if(world.stageNum===1)enterStage2();else{world.mode='clear';world.startedLatch=true;Mite.SFX?.stopBgm();}}return;}
+  if(world.clearOverlayT>0){world.clearOverlayT=Math.max(0,world.clearOverlayT-dt);if(world.clearOverlayT===0&&world.clearPending){world.clearPending=false;if(world.stageNum===1)enterStage2();else if(world.stageNum===2)enterStage3();else{world.mode='clear';world.startedLatch=true;Mite.SFX?.stopBgm();}}return;}
   world.shake=Math.max(0,world.shake-dt);world.flash=Math.max(0,world.flash-dt);world.bannerT=Math.max(0,world.bannerT-dt);world.bossFreeze=Math.max(0,world.bossFreeze-dt);world.bossIntroT=Math.max(0,world.bossIntroT-dt);
   if(world.cutinT>0){world.cutinT=Math.max(0,world.cutinT-dt);if(world.cutinT===0&&world.specialPending&&world.specialCharge<0){world.specialCharge=.30;world.banner='ハイパーウルトラ青龍波!!';world.bannerT=.72;world.shake=.18;world.flash=.10;Mite.SFX?.special();}return;}
   if(world.specialPending&&world.specialCharge>=0){world.specialCharge-=dt;if(world.specialCharge<=0){world.specialPending=false;world.projectiles.push(new DragonWave(player.x+player.facing*48,player.y-26,player.facing));world.shake=.26;world.flash=.14;}}
@@ -96,15 +114,20 @@
    else if(player.x>2010&&aliveRange(2020,2260))stage.lockX=2300;
    else if(player.x>2420&&aliveRange(2420,2740))stage.lockX=2770;
    else stage.lockX=null;
-  }else{
+  }else if(world.stageNum===2){
    if(player.x>610&&aliveRange(620,1120))stage.lockX=1140;
    else if(player.x>1360&&aliveRange(1380,1810))stage.lockX=1840;
    else if(player.x>2070&&aliveRange(2080,2450))stage.lockX=2480;
    else stage.lockX=null;
+  }else{
+   if(player.x>610&&aliveRange(620,1050))stage.lockX=1110;
+   else if(player.x>1330&&aliveRange(1360,1740))stage.lockX=1790;
+   else if(player.x>1990&&aliveRange(2020,2480))stage.lockX=2530;
+   else stage.lockX=null;
   }
   if(world.lastGate!==stage.lockX){if(world.lastGate==null&&stage.lockX!=null){world.banner=world.stageNum===2&&stage.lockX===1840?'MIX BATTLE!':'ENEMY!';world.bannerT=.6;}else if(world.lastGate!=null&&stage.lockX==null){world.banner='GO! →';world.bannerT=.72;}world.lastGate=stage.lockX;}
   stage.updateCamera(player);
-  if(player.x>2850&&world.boss&&!world.boss.entered){world.boss.entered=true;stage.lockX=null;world.banner='';world.bannerT=0;world.bossIntroT=1.35;world.bossFreeze=1.35;world.shake=.22;Mite.SFX?.boss();}
+  if(player.x>2850&&world.boss&&!world.boss.entered){world.boss.entered=true;stage.lockX=null;if(world.stageNum===3){world.banner='宇宙王バドム！';world.bannerT=1.0;world.bossIntroT=0;world.bossFreeze=.90;}else{world.banner='';world.bannerT=0;world.bossIntroT=1.35;world.bossFreeze=1.35;}world.shake=.22;Mite.SFX?.boss();}
   if(player.dead){world.mode='gameover';world.startedLatch=true;Mite.SFX?.stopBgm();if(!world.gameOverSfx){world.gameOverSfx=true;Mite.SFX?.gameover();}}
   if(world.boss&&world.boss.dead&&world.boss.remove&&!world.clearPending&&world.clearOverlayT<=0){world.clearPending=true;world.clearOverlayT=1.75;world.bossFreeze=1.75;if(!world.clearSfx){world.clearSfx=true;Mite.SFX?.clear();}}
  }
@@ -144,6 +167,7 @@
  }
 
  function drawBossIntro(){
+  if(world.stageNum===3)return;
   const cut=world.stageNum===2?images.stage2BossCutin:images.bossCutin;if(world.bossIntroT<=0||!cut)return;
   const total=world.stageNum===2?1.35:1.25,elapsed=total-world.bossIntroT;
   const enter=Math.min(1,elapsed/.16),exit=Math.min(1,world.bossIntroT/.16);
@@ -171,11 +195,15 @@
  function drawGameOver(){
   drawPlay();ctx.save();ctx.fillStyle='rgba(4,7,15,.78)';ctx.fillRect(0,0,640,360);let sz=containImage(images.gameOver,570,184);ctx.drawImage(images.gameOver,(640-sz.w)/2,42,sz.w,sz.h);sz=containImage(images.continueButton,300,78);ctx.drawImage(images.continueButton,(640-sz.w)/2,236,sz.w,sz.h);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='10px monospace';ctx.fillText('A / B / 画面タップでコンティニュー',320,335);ctx.textAlign='left';ctx.restore();
  }
- function drawClearEnd(){drawPlay();drawClearOverlay(true);}
+ function drawClearEnd(){
+  if(world.stageNum!==3){drawPlay();drawClearOverlay(true);return;}
+  drawPlay();ctx.save();ctx.fillStyle='rgba(3,5,18,.80)';ctx.fillRect(0,0,640,360);let sz=containImage(images.gameClear,520,150);ctx.drawImage(images.gameClear,(640-sz.w)/2,35,sz.w,sz.h);
+  ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='bold 19px sans-serif';ctx.fillText('世界一、いや銀河一',320,224);ctx.fillStyle='#74e8ff';ctx.font='bold 22px sans-serif';ctx.fillText('ミテちゃんは最強だぜ！',320,254);ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.fillText('SCORE  '+String(world.score).padStart(6,'0'),320,287);ctx.font='10px monospace';ctx.fillText('A / B / 画面タップでもう一度',320,316);ctx.textAlign='left';ctx.restore();
+ }
  canvas.addEventListener('pointerdown',e=>{if(world.mode!=='play'){e.preventDefault();world.tapStart=true;Mite.SFX?.unlock();}},{passive:false});
  let previous=0,acc=0;const step=1/120;
  function loop(t){const dt=previous?Math.min((t-previous)/1000,.05):0;previous=t;if(!document.hidden){acc+=dt;while(acc>=step){update(step);acc-=step;}}if(world.mode==='title')fitTitle();else if(world.mode==='play')drawPlay();else if(world.mode==='gameover')drawGameOver();else drawClearEnd();requestAnimationFrame(loop);}
  document.addEventListener('visibilitychange',()=>{previous=0;acc=0;});
- window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.05 FIX'});
+ window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.08 STAGE3'});
  requestAnimationFrame(loop);
 })();

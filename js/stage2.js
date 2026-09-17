@@ -32,11 +32,11 @@
  Mite.GroundWave=class{
   constructor(x,dir){this.x=x;this.dir=dir;this.y=300;this.remove=false;}
   get body(){return{x:this.x-28,y:this.y-26,width:56,height:26};}
-  update(dt,player,stage,world){this.x+=this.dir*220*dt;if(Mite.rectsOverlap(this.body,player.body)){if(player.hurt(16,this.x))world.shake=.18;this.remove=true;}if(this.x<0||this.x>stage.width)this.remove=true;}
+  update(dt,player,stage,world){this.x+=this.dir*440*dt;if(Mite.rectsOverlap(this.body,player.body)){if(player.hurt(16,this.x))world.shake=.18;this.remove=true;}if(this.x<0||this.x>stage.width)this.remove=true;}
   draw(ctx,stage){const x=this.x-stage.cameraX;ctx.save();ctx.translate(x,stage.floor);ctx.fillStyle='#ff8a32';ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,-16);ctx.lineTo(-5,-6);ctx.lineTo(8,-24);ctx.lineTo(20,-7);ctx.lineTo(30,0);ctx.fill();ctx.restore();}
  };
  Mite.Stage2Boss=class extends Base{
-  constructor(x){super(x,12);this.entered=false;this.isBoss=true;this.windup=0;this.slam=0;this.recover=0;this.didWave=false;this.specialHitT=0;this.facing=-1;this.windupMax=.82;this.slamMax=.46;this.recoverMax=.80;}
+  constructor(x){super(x,12);this.entered=false;this.isBoss=true;this.windup=0;this.slam=0;this.recover=0;this.didWave=false;this.specialHitT=0;this.facing=-1;this.windupMax=.41;this.slamMax=.23;this.recoverMax=.40;}
   get body(){return{x:this.x-88,y:this.y-286,width:176,height:286};}
   get weakBody(){return this.body;}
   damage(amount,dir,strong=false){const killed=super.damage(amount,dir,strong);if(strong)this.specialHitT=.55;return killed;}
@@ -56,8 +56,8 @@
     if(this.slam<=0)this.recover=this.recoverMax;return;
    }
    if(this.windup>0){this.windup-=dt;this.state='raise';this.telegraph=.10;if(this.windup<=0){this.slam=this.slamMax;this.didWave=false;Mite.SFX?.enemyAttack('punch');}return;}
-   if(ad>150){this.x+=Math.sign(d)*50*dt;this.state='walk';}else this.state='idle';
-   if(this.cooldown<=0&&ad<260){this.cooldown=2.05+Math.random()*.45;this.windup=this.windupMax;this.state='raise';}
+   if(ad>150){this.x+=Math.sign(d)*100*dt;this.state='walk';}else this.state='idle';
+   if(this.cooldown<=0&&ad<260){this.cooldown=1.03+Math.random()*.22;this.windup=this.windupMax;this.state='raise';}
    this.x=clamp(this.x,2870,stage.width-110);
   }
   draw(ctx,stage,images){
