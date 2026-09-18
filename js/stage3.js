@@ -83,7 +83,7 @@
  };
 
  Mite.Stage3Badom=class extends Base{
-  constructor(x){super(x,16);this.entered=false;this.isBoss=true;this.y=132;this.anim=0;this.action='idle';this.actionT=0;this.beamDidHit=false;this.defeatT=0;this.specialHitT=0;this.nextSummon=false;}
+  constructor(x){super(x,16);this.entered=false;this.isBoss=true;this.y=132;this.anim=0;this.action='idle';this.actionT=0;this.beamDidHit=false;this.defeatT=0;this.specialHitT=0;this.nextSummon=false;this.facing=-1;this.attackDir=-1;}
   get body(){return{x:this.x-57,y:this.y-61,width:114,height:92};}
   damage(amount,dir,strong=false){
    if(this.dead)return false;this.active=true;this.hp-=amount;this.flash=.13;this.hitstun=strong?.20:.15;this.specialHitT=strong?.42:0;Mite.SFX?.hit(strong);
@@ -92,25 +92,27 @@
   update(dt,player,stage,world){
    this.anim+=dt;this.flash=Math.max(0,this.flash-dt);this.hitstun=Math.max(0,this.hitstun-dt);this.cooldown=Math.max(0,this.cooldown-dt);this.specialHitT=Math.max(0,this.specialHitT-dt);
    if(this.dead){this.defeatT-=dt;if(this.defeatT<=0)this.remove=true;return;}
-   if(!this.entered)return;this.active=true;this.facing=-1;
-   if(this.hitstun>0)return;
+   if(!this.entered)return;this.active=true;const d=player.x-this.x,desiredFacing=d>=0?1:-1;
+   if(this.hitstun>0){this.facing=desiredFacing;return;}
    if(this.actionT>0){
     this.actionT-=dt;
-    if(this.action==='summonCharge'&&this.actionT<=0){this.action='summonRelease';this.actionT=.34;const alive=world.enemies.filter(e=>e instanceof Mite.Stage3Alien&&!e.dead&&e.summoned).length;if(alive<2){const sx=clamp(this.x-210-Math.random()*80,stage.cameraX+85,this.x-135);world.enemies.push(new Mite.Stage3Alien(sx,true));world.shake=.08;}}
-    else if(this.action==='summonRelease'&&this.actionT<=0){this.action='idle';this.cooldown=1.15;}
-    else if(this.action==='beamCharge'&&this.actionT<=0){this.action='beamFire';this.actionT=.44;this.beamDidHit=false;Mite.SFX?.enemyAttack('kick');}
+    if(this.action==='summonCharge'){this.facing=desiredFacing;if(this.actionT<=0){this.action='summonRelease';this.actionT=.30;const alive=world.enemies.filter(e=>e instanceof Mite.Stage3Alien&&!e.dead&&e.summoned).length;if(alive<2){const sx=clamp(this.x-this.facing*210+(-this.facing)*(Math.random()*80),stage.cameraX+85,stage.width-85);world.enemies.push(new Mite.Stage3Alien(sx,true));world.shake=.08;}}}
+    else if(this.action==='summonRelease'&&this.actionT<=0){this.action='idle';this.cooldown=.95;}
+    else if(this.action==='beamCharge'){this.facing=desiredFacing;this.attackDir=this.facing;if(this.actionT<=0){this.action='beamFire';this.actionT=.22;this.beamDidHit=false;Mite.SFX?.enemyAttack('kick');}}
     else if(this.action==='beamFire'){
-     const beam={x:Math.max(0,this.x-930),y:stage.floor-47,width:850,height:24};
+     const beamLen=540,beamH=18,beamY=stage.floor-24,startX=this.attackDir<0?this.x-68-beamLen:this.x+68;
+     const beam={x:startX,y:beamY,width:beamLen,height:beamH};
      if(!this.beamDidHit&&Mite.rectsOverlap(beam,player.body)){this.beamDidHit=true;if(player.hurt(18,this.x))world.shake=.18;}
-     if(this.actionT<=0){this.action='idle';this.cooldown=1.20;}
+     if(this.actionT<=0){this.action='idle';this.cooldown=1.05;}
     }
     return;
    }
+   this.facing=desiredFacing;
    const summoned=world.enemies.filter(e=>e instanceof Mite.Stage3Alien&&!e.dead&&e.summoned).length;
    if(this.cooldown<=0){
-    const summon=summoned<2&&(this.nextSummon||Math.random()<.44);this.nextSummon=!summon;
-    if(summon){this.action='summonCharge';this.actionT=.58;this.telegraph=.40;}
-    else{this.action='beamCharge';this.actionT=.66;this.telegraph=.48;}
+    const summon=summoned<2&&(this.nextSummon||Math.random()<.42);this.nextSummon=!summon;
+    if(summon){this.action='summonCharge';this.actionT=.50;this.telegraph=.36;}
+    else{this.action='beamCharge';this.actionT=.48;this.telegraph=.42;}
    }else this.action='idle';
   }
   draw(ctx,stage,images){
@@ -123,10 +125,10 @@
    else if(this.action==='beamFire')im=images.s3_badom_beam_fire;
    else im=images['s3_badom_idle_'+(Math.floor(this.anim/.20)%2+1)];
    if(this.action==='beamFire'&&!this.dead){
-    const end=x-67,start=Math.max(0,end-850),yy=stage.floor-46;
-    ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(203,61,255,.32)';ctx.fillRect(start,yy-8,end-start,38);ctx.fillStyle='#fd6cff';ctx.fillRect(start,yy,end-start,20);ctx.fillStyle='#fff';ctx.fillRect(start,yy+6,end-start,7);ctx.restore();
+    const beamLen=540,beamH=18,beamY=stage.floor-24,start=this.attackDir<0?x-67-beamLen:x+67,end=this.attackDir<0?x-67:x+67;
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(203,61,255,.25)';ctx.fillRect(Math.min(start,end),beamY-10,Math.abs(end-start),36);ctx.fillStyle='#fd6cff';ctx.fillRect(Math.min(start,end),beamY,Math.abs(end-start),beamH);ctx.fillStyle='#fff';ctx.fillRect(Math.min(start,end),beamY+4,Math.abs(end-start),8);ctx.restore();
    }
-   ctx.save();if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.45) saturate(.25)';ctx.drawImage(im,x-98,Math.round(this.y-98+bob),196,196);ctx.filter='none';ctx.restore();
+   ctx.save();ctx.translate(x,Math.round(this.y+bob));ctx.scale(-this.facing,1);if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.45) saturate(.25)';ctx.drawImage(im,-98,-98,196,196);ctx.filter='none';ctx.restore();
    if((this.action==='summonCharge'||this.action==='beamCharge')&&!this.dead)this.alert(ctx,stage,this.action==='beamCharge'?'#ff58f0':'#8affff','!!');
   }
  };

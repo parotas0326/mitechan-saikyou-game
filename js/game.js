@@ -2,7 +2,7 @@
 (async()=>{
  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
  const names=['idle0','idle1','idle2','idle3','walk0','walk1','walk2','walk3','punch0','punch1'];const images={};
- const load=src=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src;});
+ const ASSET_VER='rc112b';const load=src=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src+(src.includes('?')?'&':'?')+'v='+ASSET_VER;});
  try{
   await Promise.all(names.map(async n=>images[n]=await load('assets/'+n+'.png')));
   images.stage=await load('assets/stage1_night_street.png');images.title=await load('assets/title_screen.png');images.portrait=await load('assets/mite_portrait_power.png');images.dragon=await load('assets/hyper_ultra_seiryuuha_forward.png');images.cutin=await load('assets/special_cutin.jpg');images.bossCutin=await load('assets/boss_cutin.png');images.acorn=await load('assets/acorn.png');
@@ -208,6 +208,6 @@
  let previous=0,acc=0;const step=1/120;
  function loop(t){const dt=previous?Math.min((t-previous)/1000,.05):0;previous=t;if(!document.hidden){acc+=dt;while(acc>=step){update(step);acc-=step;}}if(world.mode==='title')fitTitle();else if(world.mode==='play')drawPlay();else if(world.mode==='gameover')drawGameOver();else drawClearEnd();requestAnimationFrame(loop);}
  document.addEventListener('visibilitychange',()=>{previous=0;acc=0;});
- window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.11 TANK+ZOOM FIX'});
+ window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.12b BOSS FIX+CACHE BUST'});
  requestAnimationFrame(loop);
 })();

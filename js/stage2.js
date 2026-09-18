@@ -44,7 +44,7 @@
   draw(ctx,stage){const x=this.x-stage.cameraX;ctx.save();ctx.translate(x,stage.floor);ctx.fillStyle='#ff8a32';ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,-16);ctx.lineTo(-5,-6);ctx.lineTo(8,-24);ctx.lineTo(20,-7);ctx.lineTo(30,0);ctx.fill();ctx.restore();}
  };
  Mite.Stage2Boss=class extends Base{
-  constructor(x){super(x,12);this.entered=false;this.isBoss=true;this.windup=0;this.slam=0;this.recover=0;this.didWave=false;this.specialHitT=0;this.facing=-1;this.windupMax=.41;this.slamMax=.23;this.recoverMax=.40;}
+  constructor(x){super(x,12);this.entered=false;this.isBoss=true;this.windup=0;this.slam=0;this.recover=0;this.didWave=false;this.specialHitT=0;this.facing=-1;this.attackDir=-1;this.windupMax=.41;this.slamMax=.23;this.recoverMax=.40;}
   get body(){return{x:this.x-88,y:this.y-286,width:176,height:286};}
   get weakBody(){return this.body;}
   damage(amount,dir,strong=false){const killed=super.damage(amount,dir,strong);if(strong)this.specialHitT=.55;return killed;}
@@ -56,14 +56,15 @@
   }
   update(dt,player,stage,world){
    this.tick(dt);this.specialHitT=Math.max(0,this.specialHitT-dt);if(this.dead||!this.entered)return;this.active=true;
-   const d=player.x-this.x,ad=Math.abs(d);this.facing=-1; // approved: Stage 2 boss always faces LEFT
-   if(this.hitstun>0)return;
-   if(this.recover>0){this.recover-=dt;this.state='recover';return;}
-   if(this.slam>0){this.slam-=dt;this.state='slam';
-    if(!this.didWave&&this.slam<this.slamMax*.48){this.didWave=true;world.projectiles.push(new Mite.GroundWave(this.x-35,-1));if(Math.abs(player.x-this.x)<118&&player.y>stage.floor-85)player.hurt(18,this.x);world.shake=.30;world.flash=.08;}
+   const d=player.x-this.x,ad=Math.abs(d),desiredFacing=d>=0?1:-1;
+   if(this.hitstun>0){this.facing=desiredFacing;return;}
+   if(this.recover>0){this.facing=desiredFacing;this.recover-=dt;this.state='recover';return;}
+   if(this.slam>0){this.facing=this.attackDir;this.slam-=dt;this.state='slam';
+    if(!this.didWave&&this.slam<this.slamMax*.48){this.didWave=true;world.projectiles.push(new Mite.GroundWave(this.x+this.attackDir*35,this.attackDir));if(Math.abs(player.x-this.x)<118&&player.y>stage.floor-85&&Math.sign(player.x-this.x)===this.attackDir)player.hurt(18,this.x);world.shake=.30;world.flash=.08;}
     if(this.slam<=0)this.recover=this.recoverMax;return;
    }
-   if(this.windup>0){this.windup-=dt;this.state='raise';this.telegraph=.10;if(this.windup<=0){this.slam=this.slamMax;this.didWave=false;Mite.SFX?.enemyAttack('punch');}return;}
+   if(this.windup>0){this.facing=desiredFacing;this.attackDir=this.facing;this.windup-=dt;this.state='raise';this.telegraph=.10;if(this.windup<=0){this.slam=this.slamMax;this.didWave=false;Mite.SFX?.enemyAttack('punch');}return;}
+   this.facing=desiredFacing;
    if(ad>150){this.x+=Math.sign(d)*100*dt;this.state='walk';}else this.state='idle';
    if(this.cooldown<=0&&ad<260){this.cooldown=1.03+Math.random()*.22;this.windup=this.windupMax;this.state='raise';}
    this.x=clamp(this.x,2870,stage.width-110);
@@ -72,11 +73,10 @@
    this.shadow(ctx,stage,67);const x=this.x-stage.cameraX,y=stage.floor;
    let im=images['s2_boss_attack_'+this.attackFrame()]||images.s2_boss_idle;
    if(this.hitstun>0||this.specialHitT>0)im=images.s2_boss_hurt;
-   ctx.save();ctx.translate(x,y); // no horizontal flip: source art is already left-facing and must stay left-facing
-   if(this.dead)ctx.rotate(-this.deathRot);
+   ctx.save();ctx.translate(x,y);ctx.scale(-this.facing,1);
+   if(this.dead)ctx.rotate(this.deathRot*this.facing);
    if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.5) saturate(.2)';
-   if((this.hitstun>0||this.specialHitT>0)&&im===images.s2_boss_hurt){ctx.drawImage(im,-110,-250,220,248);}else{ctx.drawImage(im,-132,-330,264,350);}
-   ctx.filter='none';ctx.restore();
+   if((this.hitstun>0||this.specialHitT>0)&&im===images.s2_boss_hurt){ctx.drawImage(im,-110,-250,220,248);}else{ctx.drawImage(im,-132,-330,264,350);}ctx.filter='none';ctx.restore();
    if(this.windup>0)this.alert(ctx,stage,'#ff563d','!!');
   }
  };

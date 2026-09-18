@@ -48,17 +48,42 @@ Mite.Acorn=class{
  draw(ctx,stage,images){const x=this.x-stage.cameraX;if(x<-60||x>700)return;ctx.save();ctx.translate(Math.round(x),Math.round(this.y));ctx.scale(this.dir,1);ctx.rotate(this.spin);ctx.drawImage(images.acorn,-27,-40,54,62);ctx.restore();ctx.save();ctx.strokeStyle='#f4f7ff';ctx.globalAlpha=.62;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(Math.round(x-this.dir*46),Math.round(this.y+6));ctx.lineTo(Math.round(x-this.dir*18),Math.round(this.y+6));ctx.stroke();ctx.restore();if(this.age<.42){ctx.save();ctx.textAlign='center';ctx.font='bold 9px monospace';ctx.fillStyle='#fff';ctx.strokeStyle='#111827';ctx.lineWidth=3;ctx.strokeText('どんぐり!',Math.round(x),Math.round(this.y-42));ctx.fillText('どんぐり!',Math.round(x),Math.round(this.y-42));ctx.restore();}}
 };
 Mite.Boss=class extends EnemyBase{
- constructor(x){super(x,10);this.attackType='';this.attackTimer=0;this.name='DAICHI';this.entered=false;this.windup=0;this.didHit=false;this.isBoss=true;this.specialHitT=0;}
+ constructor(x){super(x,10);this.attackType='';this.attackTimer=0;this.attackMax=0;this.name='DAICHI';this.entered=false;this.windup=0;this.windupMax=0;this.didHit=false;this.isBoss=true;this.specialHitT=0;this.attackDir=-1;}
  damage(amount,dir,strong=false){const killed=super.damage(amount,dir,strong);if(strong)this.specialHitT=.55;return killed;}
- update(dt,player,stage,world){this.tick(dt);this.specialHitT=Math.max(0,this.specialHitT-dt);if(this.dead)return;if(!this.entered)return;this.active=true;const d=player.x-this.x,ad=Math.abs(d);this.facing=d>=0?1:-1;if(this.hitstun>0)return;
-  if(this.windup>0){this.windup-=dt;this.state='windup';this.telegraph=.08;if(this.windup<=0){this.attackTimer=this.attackType==='kick'?.54:.42;this.didHit=false;Mite.SFX?.enemyAttack(this.attackType);}return;}
-  if(this.attackTimer>0){this.attackTimer-=dt;this.state=this.attackType;const active=this.attackType==='kick'?this.attackTimer<.32&&this.attackTimer>.13:this.attackTimer<.25&&this.attackTimer>.09;const reach=this.attackType==='kick'?112:84;if(active&&!this.didHit&&ad<reach){this.didHit=true;if(player.hurt(this.attackType==='kick'?16:11,this.x))world.shake=this.attackType==='kick'?.18:.11;}return;}
-  if(ad>88){this.x+=Math.sign(d)*82*dt;this.state='walk';}else this.state='idle';if(this.cooldown<=0&&ad<150){this.cooldown=1.25+Math.random()*.32;this.attackType=Math.random()<.48?'kick':'punch';this.windup=this.attackType==='kick'?.52:.38;}this.x=Math.max(2820,Math.min(stage.width-70,this.x));}
- draw(ctx,stage,images){this.shadow(ctx,stage,27);const x=Math.round(this.x-stage.cameraX),y=stage.floor;ctx.save();ctx.translate(x,y);ctx.scale(this.facing,1);if(this.dead)ctx.rotate(this.deathRot*this.facing);
-  if(this.specialHitT>0||this.hitstun>0){ctx.translate(-14,-4);ctx.rotate(-.22);}
-  else if(this.windup>0){ctx.translate(-8,0);ctx.rotate(.07);}
-  else if(this.attackTimer>0){ctx.translate(this.attackType==='kick'?8:12,0);ctx.rotate(this.attackType==='kick'?.02:-.03);}
-  if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.6) saturate(.2)';ctx.drawImage(images&&images.boss,-44,-116,88,116);ctx.filter='none';
-  if(this.attackTimer>0){const pulse=Math.floor(performance.now()/55)%2;if(this.attackType==='punch'){ctx.fillStyle=pulse?'#fff6bd':'#ffd84a';ctx.fillRect(28,-70,48,10);ctx.fillStyle='#ff5a36';ctx.beginPath();ctx.arc(78,-65,13,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(44,-75);ctx.lineTo(80,-65);ctx.stroke();}else{ctx.strokeStyle=pulse?'#e8fbff':'#58dcff';ctx.lineWidth=10;ctx.beginPath();ctx.arc(4,-34,64,-.78,.32);ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(50,-38,42,9);}}
-  ctx.restore();if(this.windup>0)this.alert(ctx,stage,this.attackType==='kick'?'#58dcff':'#ffd84a','!');if(this.specialHitT>0){ctx.save();ctx.strokeStyle='#64e5ff';ctx.globalAlpha=Math.min(1,this.specialHitT*2);ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y-62,42+Math.sin(performance.now()/60)*5,0,Math.PI*2);ctx.stroke();ctx.restore();}}
+ sheetFrame(){
+  if(this.attackType==='punch'){
+   if(this.windup>0){const p=1-this.windup/Math.max(.01,this.windupMax);return p<.55?1:2;}
+   if(this.attackTimer>0)return 3;
+  }
+  if(this.attackType==='kick'){
+   if(this.windup>0){const p=1-this.windup/Math.max(.01,this.windupMax);return p<.55?4:5;}
+   if(this.attackTimer>0)return 6;
+  }
+  return 0;
+ }
+ update(dt,player,stage,world){
+  this.tick(dt);this.specialHitT=Math.max(0,this.specialHitT-dt);if(this.dead)return;if(!this.entered)return;this.active=true;const d=player.x-this.x,ad=Math.abs(d);if(this.hitstun>0)return;
+  if(this.windup>0){this.attackDir=d>=0?1:-1;this.facing=this.attackDir;this.windup-=dt;this.state='windup';this.telegraph=.08;if(this.windup<=0){this.attackMax=this.attackType==='kick'?.60:.48;this.attackTimer=this.attackMax;this.didHit=false;Mite.SFX?.enemyAttack(this.attackType);}return;}
+  if(this.attackTimer>0){this.facing=this.attackDir;this.attackTimer-=dt;this.state=this.attackType;const active=this.attackType==='kick'?this.attackTimer<.39&&this.attackTimer>.12:this.attackTimer<.30&&this.attackTimer>.08;const reach=this.attackType==='kick'?126:94;if(active&&!this.didHit&&ad<reach&&Math.sign(player.x-this.x)===this.attackDir){this.didHit=true;if(player.hurt(this.attackType==='kick'?16:11,this.x))world.shake=this.attackType==='kick'?.18:.11;}return;}
+  this.facing=d>=0?1:-1;
+  if(ad>88){this.x+=Math.sign(d)*82*dt;this.state='walk';}else this.state='idle';
+  if(this.cooldown<=0&&ad<150){this.cooldown=1.25+Math.random()*.32;this.attackType=Math.random()<.5?'kick':'punch';this.attackDir=this.facing;this.windupMax=this.attackType==='kick'?.56:.42;this.windup=this.windupMax;}
+  this.x=Math.max(2820,Math.min(stage.width-70,this.x));
+ }
+ draw(ctx,stage,images){
+  this.shadow(ctx,stage,27);const x=Math.round(this.x-stage.cameraX),y=stage.floor,sheet=images&&images.boss;ctx.save();ctx.translate(x,y);ctx.scale(this.facing,1);if(this.dead)ctx.rotate(this.deathRot*this.facing);
+  let bob=0,lean=0,shift=0,sx=1,sy=1;
+  if(this.specialHitT>0||this.hitstun>0){shift=-10;bob=-3;lean=-.16;}
+  else if(this.windup>0){const p=1-this.windup/Math.max(.01,this.windupMax);const crouch=Math.sin(Math.min(1,p)*Math.PI*.5);shift=-8*crouch;bob=3*crouch;lean=.06*crouch;sx=1.02;sy=.98;}
+  else if(this.attackTimer>0){const p=1-this.attackTimer/Math.max(.01,this.attackMax);const snap=Math.sin(Math.min(1,p)*Math.PI);if(this.attackType==='punch'){shift=18*snap;lean=-.05*snap;sx=1+.03*snap;sy=1-.02*snap;}else{shift=15*snap;bob=-8*snap;lean=-.08*snap;sx=1+.03*snap;sy=1+.02*snap;}}
+  ctx.translate(shift,bob);ctx.rotate(lean);ctx.scale(sx,sy);
+  if(this.flash>0||this.specialHitT>0)ctx.filter='brightness(2.6) saturate(.2)';
+  if(sheet&&sheet.width>=1050){const cellW=150,cellH=160,frame=this.sheetFrame();ctx.drawImage(sheet,frame*cellW,0,cellW,cellH,-66,-136,132,136);}else{ctx.drawImage(sheet,-44,-116,88,116);}ctx.filter='none';
+  if(this.attackTimer>0){const p=1-this.attackTimer/Math.max(.01,this.attackMax),pulse=Math.floor(performance.now()/55)%2;if(this.attackType==='punch'){const reach=48+34*Math.sin(Math.min(1,p)*Math.PI);ctx.globalAlpha=.40+.45*Math.sin(Math.min(1,p)*Math.PI);ctx.strokeStyle=pulse?'#fff6bd':'#ffd84a';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(32,-68);ctx.lineTo(reach,-68);ctx.stroke();ctx.fillStyle='#ff633a';ctx.beginPath();ctx.arc(reach+7,-68,8+6*Math.sin(Math.min(1,p)*Math.PI),0,Math.PI*2);ctx.fill();}
+   else{ctx.globalAlpha=.42+.45*Math.sin(Math.min(1,p)*Math.PI);ctx.strokeStyle=pulse?'#f6feff':'#58dcff';ctx.lineWidth=9;ctx.beginPath();ctx.arc(12,-35,58,-1.18,.28);ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(52,-44,42+20*Math.sin(Math.min(1,p)*Math.PI),8);}}
+  ctx.restore();
+  if(this.windup>0){this.alert(ctx,stage,this.attackType==='kick'?'#58dcff':'#ffd84a',this.attackType==='kick'?'KICK!':'PUNCH!');}
+  if(this.attackTimer>0){ctx.save();ctx.globalAlpha=.35;ctx.fillStyle=this.attackType==='kick'?'#58dcff':'#ffd84a';ctx.fillRect(x-30,y-5,60,4);ctx.restore();}
+  if(this.specialHitT>0){ctx.save();ctx.strokeStyle='#64e5ff';ctx.globalAlpha=Math.min(1,this.specialHitT*2);ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y-62,42+Math.sin(performance.now()/60)*5,0,Math.PI*2);ctx.stroke();ctx.restore();}
+ }
 };
