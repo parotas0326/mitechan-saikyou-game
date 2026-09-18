@@ -25,11 +25,10 @@
   }
   draw(ctx,stage,images){
    this.shadow(ctx,stage,21);const x=Math.round(this.x-stage.cameraX),y=this.dead?this.y:stage.floor;
-   let key;
-   if(this.attackT>0){const p=1-this.attackT/this.attackMax;key='s3_alien_attack_'+(1+Math.min(7,Math.floor(p*8)));}
-   else key='s3_alien_walk_'+(1+(Math.floor(this.anim/.095)%8));
-   const im=images[key]||images.s3_alien_walk_1;
-   ctx.save();ctx.translate(x,y);ctx.scale(this.facing,1);if(this.dead)ctx.rotate(this.deathRot*this.facing);if(this.flash>0)ctx.filter='brightness(2.35) saturate(0)';ctx.drawImage(im,-48,-92,96,96);ctx.filter='none';ctx.restore();
+   let im,frame;
+   if(this.attackT>0){const p=1-this.attackT/this.attackMax;im=images.s3_alien_attack_sheet;frame=Math.min(7,Math.floor(p*8));}
+   else{im=images.s3_alien_walk_sheet;frame=Math.floor(this.anim/.095)%8;}
+   ctx.save();ctx.translate(x,y);ctx.scale(this.facing,1);if(this.dead)ctx.rotate(this.deathRot*this.facing);if(this.flash>0)ctx.filter='brightness(2.35) saturate(0)';ctx.drawImage(im,frame*112,0,112,112,-48,-92,96,96);ctx.filter='none';ctx.restore();
    if(this.telegraph>0)this.alert(ctx,stage,'#ffd84a','!');this.hpPips(ctx,x,stage.floor);
   }
  };

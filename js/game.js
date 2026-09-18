@@ -2,7 +2,7 @@
 (async()=>{
  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
  const names=['idle0','idle1','idle2','idle3','walk0','walk1','walk2','walk3','punch0','punch1'];const images={};
- const ASSET_VER='rc112c';const load=src=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error(src.startsWith('data:')?'embedded-image':src));im.src=src.startsWith('data:')?src:src+(src.includes('?')?'&':'?')+'v='+ASSET_VER;});
+ const ASSET_VER='rc112d';const load=src=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error(src));im.src=src.startsWith('data:')?src:src+(src.includes('?')?'&':'?')+'v='+ASSET_VER;});
  try{
   await Promise.all(names.map(async n=>images[n]=await load('assets/'+n+'.png')));
   images.stage=await load('assets/stage1_night_street.png');images.title=await load('assets/title_screen.png');images.portrait=await load('assets/mite_portrait_power.png');images.dragon=await load('assets/hyper_ultra_seiryuuha_forward.png');images.cutin=await load('assets/special_cutin.jpg');images.bossCutin=await load('assets/boss_cutin.png');images.acorn=await load('assets/acorn.png');
@@ -15,10 +15,10 @@
   for(let i=0;i<8;i++)images['s2_boss_attack_'+i]=await load('assets/stage2/boss_attack_'+i+'.png');
   images.gameClear=await load('assets/game_clear.png');images.gameOver=await load('assets/gameover_mite.png');images.continueButton=await load('assets/continue_button.png');images.stage3BossCutin=await load('assets/stage3_boss_cutin.png');images.finalClearCutin=await load('assets/final_clear_cutin.png');
   images.stage3=await load('assets/stage3/background.png');
-  for(let i=1;i<=8;i++){images['s3_alien_walk_'+i]=await load('assets/stage3/alien/walk_'+String(i).padStart(2,'0')+'.png');images['s3_alien_attack_'+i]=await load('assets/stage3/alien/attack_'+String(i).padStart(2,'0')+'.png');}
+  images.s3_alien_walk_sheet=await load('assets/stage3/alien/walk_sheet.png');images.s3_alien_attack_sheet=await load('assets/stage3/alien/attack_sheet.png');
   images.s3_ufo_idle_1=await load('assets/stage3/ufo/idle_01.png');images.s3_ufo_idle_2=await load('assets/stage3/ufo/idle_02.png');images.s3_ufo_hover=await load('assets/stage3/ufo/hover.png');images.s3_ufo_move_1=await load('assets/stage3/ufo/move_01.png');images.s3_ufo_move_2=await load('assets/stage3/ufo/move_02.png');images.s3_ufo_charge_1=await load('assets/stage3/ufo/beam_charge_01.png');images.s3_ufo_charge_2=await load('assets/stage3/ufo/beam_charge_02.png');images.s3_ufo_fire=await load('assets/stage3/ufo/beam_fire.png');images.s3_ufo_damage=await load('assets/stage3/ufo/damage.png');images.s3_ufo_destroy=await load('assets/stage3/ufo/destroy.png');
   images.s3_badom_idle_1=await load('assets/stage3/badom/idle_01.png');images.s3_badom_idle_2=await load('assets/stage3/badom/idle_02.png');for(const n of ['summon_charge','summon_release','beam_charge','beam_fire','damage','defeat'])images['s3_badom_'+n]=await load('assets/stage3/badom/'+n+'.png');
- }catch(e){document.getElementById('loading').textContent='画像を読み込めません。ZIPをすべて展開して開いてください。';return;}
+ }catch(e){console.error('Asset load failed:',e);document.getElementById('loading').textContent='画像読み込みエラー：'+(e&&e.message?e.message:'不明な素材');return;}
  document.getElementById('loading').hidden=true;document.getElementById('loading').style.display='none';
  const input=new Mite.Input(),stage=new Mite.Stage(images.stage),player=new Mite.Player(stage);
  const world={stageNum:1,enemies:[],projectiles:[],boss:null,sparks:[],mode:'title',score:0,startedLatch:false,shake:0,flash:0,banner:'',bannerT:0,clearT:0,clearOverlayT:0,clearPending:false,lastGate:null,gameOverSfx:false,clearSfx:false,tapStart:false,bossFreeze:0,hitstop:0,specialLatch:false,enemyHitFx:null,bossIntroT:0,specialCharge:0,specialPending:false,cutinT:0,cutinMax:.78};
@@ -208,6 +208,6 @@
  let previous=0,acc=0;const step=1/120;
  function loop(t){const dt=previous?Math.min((t-previous)/1000,.05):0;previous=t;if(!document.hidden){acc+=dt;while(acc>=step){update(step);acc-=step;}}if(world.mode==='title')fitTitle();else if(world.mode==='play')drawPlay();else if(world.mode==='gameover')drawGameOver();else drawClearEnd();requestAnimationFrame(loop);}
  document.addEventListener('visibilitychange',()=>{previous=0;acc=0;});
- window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.12b BOSS FIX+CACHE BUST'});
+ window.miteState=()=>({mode:world.mode,x:player.x,screenX:player.x-stage.cameraX,cameraX:stage.cameraX,hp:player.hp,power:player.power,combo:player.comboStep,enemyCount:world.enemies.filter(e=>!e.dead).length,bossHp:world.boss?world.boss.hp:null,projectiles:world.projectiles.length,score:world.score,gate:stage.lockX,stage:world.stageNum,version:'RC1.12d BOSS FIX+CACHE BUST'});
  requestAnimationFrame(loop);
 })();
